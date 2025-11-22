@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Modelagem de tópicos</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <h1>Modelagem de Tópicos — G1 (Economia)</h1>
+    <p class="subtitle">Realize as ações nessa sequência</p>
+    <p class="subtitle">1. Coleta → 2. Pré-processamento → 3. Bag-of-Words → 4. Estatísticas</p>
+  </header>
+
+  <main class="container">
+
+    <section class="controls">
+      <button id="btn-coletar" class="btn">Coletar notícias</button>
+      <button id="btn-processar" class="btn" disabled>Processar</button>
+      <button id="btn-bow" class="btn" disabled>Gerar Bag Of Words</button>
+      <button id="btn-topicos" class="btn" disabled>Gerar Tópicos</button>
+
+      <div id="status" class="status">Nenhuma ação iniciada.</div>
+    </section>
+
+    <section class="summary" id="summary">
+      <h2>Resumo</h2>
+      <div id="summary-content">
+        Execute a coleta para começar.
+      </div>
+    </section>
+
+    <section class="charts">
+      <div class="chart-card">
+        <h3>Top palavras por frequência</h3>
+        <canvas id="chartFreq"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <h3>Top palavras por TF-IDF</h3>
+        <canvas id="chartTfidf"></canvas>
+      </div>
+    </section>
+
+    <section class="insights">
+      <h2>Insights</h2>
+      <div id="insights-text">Nenhum insight ainda.</div>
+    </section>
+
+  </main>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
