@@ -3,14 +3,26 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import time
 
-RSS_URL = "https://g1.globo.com/rss/g1/economia/"
+RSS_URLS = [
+   "https://g1.globo.com/rss/g1/economia/",
+   "https://g1.globo.com/rss/g1/politica/",
+   "https://g1.globo.com/rss/g1/mundo/",
+   "https://g1.globo.com/rss/g1/tecnologia/"
+]
 
 
-def baixar_rss(url=RSS_URL):
-    response = requests.get(url)
-    soup = BeautifulSoup(response.content, "xml")
-    items = soup.find_all("item")
-    return items
+
+def baixar_rss(urls=RSS_URLS):
+    all_items = []
+    for url in urls:
+        try:
+            response = requests.get(url, timeout=10)
+            soup = BeautifulSoup(response.content, "xml")
+            items = soup.find_all("item")
+            all_items.extend(items)
+        except Exception as e:
+            print(f"Falha ao baixar RSS: {url} -> {e}")
+    return all_items
 
 
 def extrair_texto_noticia(url):

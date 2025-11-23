@@ -1,9 +1,15 @@
 import re
 import unicodedata
 import spacy
+from spacy.util import is_package
+
+MODEL_NAME = "pt_core_news_sm"
+
+# Verifica se o modelo já está instalado
+if not is_package(MODEL_NAME):
+    spacy.cli.download(MODEL_NAME)
 
 # Carrega o modelo de língua portuguesa do spaCy para lematização e stopwords
-spacy.cli.download("pt_core_news_sm")
 nlp = spacy.load("pt_core_news_sm")
 
 # Obtém a lista de stopwords padrão do spaCy para o português

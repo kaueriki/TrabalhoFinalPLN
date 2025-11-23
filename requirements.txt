@@ -5,3 +5,5 @@ pandas
 spacy
 scikit-learn
 lxml
+bertopic
+sentence_transformers

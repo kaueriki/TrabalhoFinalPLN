@@ -1,5 +1,6 @@
 import os
 from flask import Flask, render_template, jsonify
+from tranformers_topic_model import gerar_topicos_transformers
 from coleta import coletar_noticias
 from preprocessing_pipeline import preprocessar_corpus
 from text_representation import criar_bow
@@ -57,6 +58,30 @@ def process():
                 for i in range(len(topicos))
             ]
         }
+
+        return jsonify({
+            "status": "ok",
+            "topicos": topicos,
+            "chart_data": chart_data
+        })
+
+    except Exception as e:
+        return jsonify({"status": "erro", "mensagem": str(e)}), 500
+
+@app.route("/processtransformers", methods=["POST"])
+def process_transformers():
+    try:
+        # Coleta notícias
+        df = coletar_noticias(limit=150)
+        textos = [n["texto"] for n in df.to_dict(orient="records")]
+
+        # Pré-processa textos
+        textos_limpos, tokens = preprocessar_corpus(textos)
+
+        # Gera tópicos com Transformers
+        topicos, chart_data = gerar_topicos_transformers(textos_limpos)
+
+        print("Tópicos extraídos:", topicos)
 
         return jsonify({
             "status": "ok",
