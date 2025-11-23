@@ -1,9 +1,9 @@
 import os
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify
 from coleta import coletar_noticias
 from preprocessing_pipeline import preprocessar_corpus
-from language_model_pipeline import calcular_bow_tfidf
-from topic_model import gerar_topicos
+from text_representation import criar_bow
+from topic_model import treinar_lda, obter_topicos_palavras
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -13,96 +13,59 @@ app = Flask(
     static_folder=os.path.join(BASE_DIR, "static")
 )
 
-noticias_data = None
-preprocess_output = None
-bow_global = None
-tfidf_global = None
-topicos_global = None
-
 @app.route("/")
 def home():
     return render_template("index.html")
 
-
-@app.route("/coletar", methods=["POST"])
-def coletar():
-    global noticias_data
-
+@app.route("/process", methods=["POST"])
+def process():
     try:
-        df = coletar_noticias(limit=20)
-        noticias_data = df.to_dict(orient="records")
+        # 1. Coleta de Dados
+        df = coletar_noticias(limit=30)
+        noticias = df.to_dict(orient="records")
+        textos = [n["texto"] for n in noticias]
+
+        # 2. Pré-processamento
+        textos_limpos, tokens = preprocessar_corpus(textos)
+
+        # 3. Representação Vetorial (BoW)
+        bow_matrix, feature_names, vectorizer = criar_bow(textos_limpos)
+
+        # 4. Modelagem de Tópicos (LDA)
+        lda_model = treinar_lda(bow_matrix, n_topicos=5)
+
+        # 5. Extração de Tópicos e Palavras
+        topicos = obter_topicos_palavras(lda_model, feature_names, n_palavras=10)
+
+        print("Tópicos extraídos:", topicos)
+
+        # 6. Preparação dos Dados para o Frontend
+        topic_distribution = lda_model.transform(bow_matrix)
+        topic_proportions = topic_distribution.mean(axis=0)
+
+        chart_data = {
+            "pie_chart": {
+                "labels": [f"Tópico {i+1}" for i in range(len(topicos))],
+                "data": topic_proportions.tolist()
+            },
+            "bar_charts": [
+                {
+                    "topic": f"Tópico {i+1}",
+                    "words": [palavra for palavra, _ in topicos[i]],
+                    "scores": [score for _, score in topicos[i]]
+                }
+                for i in range(len(topicos))
+            ]
+        }
 
         return jsonify({
             "status": "ok",
-            "total": len(noticias_data),
-            "noticias": noticias_data
+            "topicos": topicos,
+            "chart_data": chart_data
         })
 
     except Exception as e:
         return jsonify({"status": "erro", "mensagem": str(e)}), 500
-
-
-@app.route("/processar", methods=["POST"])
-def processar():
-    global noticias_data, preprocess_output
-
-    if noticias_data is None:
-        return jsonify({"status": "erro", "mensagem": "Nenhum dado coletado!"}), 400
-
-    try:
-        textos = [n["texto"] for n in noticias_data]
-        preprocess_output = preprocessar_corpus(textos)
-
-        return jsonify({
-            "status": "ok",
-            "qtd_textos": len(preprocess_output["textos_limpos"])
-        })
-
-    except Exception as e:
-        return jsonify({"status": "erro", "mensagem": str(e)}), 500
-
-
-@app.route("/bow", methods=["POST"])
-def bow():
-    global preprocess_output, bow_global, tfidf_global
-
-    if preprocess_output is None:
-        return jsonify({"status": "erro", "mensagem": "Execute o pré-processamento antes!"}), 400
-
-    try:
-        bow_global, tfidf_global = calcular_bow_tfidf(preprocess_output)
-
-        top_freq = sorted(bow_global.items(), key=lambda x: x[1], reverse=True)[:20]
-        top_tfidf = sorted(tfidf_global.items(), key=lambda x: x[1], reverse=True)[:20]
-
-        return jsonify({
-            "status": "ok",
-            "top_freq": top_freq,
-            "top_tfidf": top_tfidf
-        })
-
-    except Exception as e:
-        return jsonify({"status": "erro", "mensagem": str(e)}), 500
-
-
-@app.route("/topicos", methods=["POST"])
-def topicos():
-    global bow_global, tfidf_global, topicos_global
-
-    if bow_global is None or tfidf_global is None:
-        return jsonify({"status": "erro", "mensagem": "Execute BOW/TF-IDF antes!"}), 400
-
-    try:
-        topicos_global = gerar_topicos(bow_global, tfidf_global)
-
-        return jsonify({
-            "status": "ok",
-            "topicos": topicos_global
-        })
-
-    except Exception as e:
-        return jsonify({"status": "erro", "mensagem": str(e)}), 500
-
 
 if __name__ == "__main__":
     app.run(debug=True)

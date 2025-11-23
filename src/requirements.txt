@@ -1,6 +1,0 @@
-pandas
-bs4
-requests
-flask
-lxml
-spacy

@@ -1,50 +1,54 @@
 import re
 import unicodedata
+import spacy
 
-STOPWORDS = set([
-    "a", "o", "os", "as", "de", "da", "do", "das", "dos", "em", "um", "uma",
-    "para", "com", "que", "por", "na", "no", "nas", "nos", "se", "e"
-])
+# Carrega o modelo de língua portuguesa do spaCy para lematização e stopwords
+spacy.cli.download("pt_core_news_sm")
+nlp = spacy.load("pt_core_news_sm")
 
+# Obtém a lista de stopwords padrão do spaCy para o português
+STOPWORDS = nlp.Defaults.stop_words
 
 def limpar_texto(texto):
-
+    # Garante que o texto seja uma string
     if not isinstance(texto, str):
         return ""
-
-    # Normaliza acentos
+    
+    # Remove acentos e caracteres especiais
     texto = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("utf-8")
-
-    # Remove caracteres que não sejam letras ou espaço
+    # Remove tudo que não for letra ou espaço
     texto = re.sub(r"[^a-zA-Z\s]", " ", texto)
-
-    # Converte para minúsculo
+    # Converte o texto para minúsculas
     texto = texto.lower()
-
-    # Remove espaços múltiplos
+    # Remove espaços extras
     texto = re.sub(r"\s+", " ", texto).strip()
-
     return texto
 
-
-def remover_stopwords(palavras):
-    return [p for p in palavras if p not in STOPWORDS and len(p) > 2]
-
-
+# Aplica a pipeline completa de pré-processamento a uma lista de textos
 def preprocessar_corpus(lista_textos):
-    textos_limpos = []
-    tokens_limpos = []
+    textos_processados = []
+    tokens_processados = []
 
+    # Itera sobre cada texto da lista
     for texto in lista_textos:
-        t = limpar_texto(texto)
+        # Aplica a limpeza inicial
+        texto_limpo = limpar_texto(texto)
+        
+        # Processa o texto com o spaCy para obter os tokens, lemas, etc.
+        doc = nlp(texto_limpo)
+        
+        # Realiza a lematização e remove stopwords e pontuações
+        tokens = [
+            token.lemma_  # Pega o lema (forma base da palavra)
+            for token in doc 
+            if token.text not in STOPWORDS  # Remove stopwords
+            and not token.is_punct  # Remove pontuações
+            and len(token.text) > 2  # Remove palavras muito curtas
+        ]
+        
+        # Junta os tokens para formar o texto processado
+        textos_processados.append(" ".join(tokens))
+        # Mantém a lista de tokens para possíveis usos futuros
+        tokens_processados.append(tokens)
 
-        palavras = t.split()
-        palavras = remover_stopwords(palavras)
-
-        textos_limpos.append(" ".join(palavras))
-        tokens_limpos.append(palavras)
-
-    return {
-        "textos_limpos": textos_limpos,
-        "tokens": tokens_limpos
-    }
+    return textos_processados, tokens_processados
