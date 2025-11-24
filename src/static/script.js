@@ -1,5 +1,5 @@
-let chartFreq = null;
-let chartTfidf = null;
+let pieChart = null;
+let barCharts = [];
 
 function atualizarStatus(msg) {
     document.getElementById("status").innerText = msg;
@@ -10,119 +10,132 @@ async function postData(url) {
     return resp.json();
 }
 
-document.getElementById("btn-coletar").onclick = async () => {
-    atualizarStatus("Coletando notícias...");
-    const data = await postData("/coletar");
+document.getElementById("btn-lda").onclick = async () => {
+    atualizarStatus("Processando com LDA (coletando, processando e gerando tópicos)...");
+    const data = await postData("/process");
 
     if (data.status === "ok") {
-        atualizarStatus(`Coleta concluída — ${data.total} notícias.`);
+        atualizarStatus("Tópicos LDA gerados com sucesso!");
         document.getElementById("summary-content").innerText =
-            `${data.total} notícias coletadas.`;
-
-        document.getElementById("btn-processar").disabled = false;
+            "Pipeline LDA concluído: coleta, pré-processamento e modelagem.";
+        
+        exibirTopicos(data.topicos);
+        plotarGraficos(data.chart_data);
     } else {
-        atualizarStatus("Erro na coleta.");
+        atualizarStatus("Erro ao processar com LDA: " + data.mensagem);
     }
 };
 
-
-document.getElementById("btn-processar").onclick = async () => {
-    atualizarStatus("Processando corpus...");
-    const data = await postData("/processar");
+document.getElementById("btn-transformers").onclick = async () => {
+    atualizarStatus("Processando com Transformers (coletando, processando e gerando tópicos)...");
+    const data = await postData("/processtransformers");
 
     if (data.status === "ok") {
-        atualizarStatus("Pré-processamento concluído.");
-        document.getElementById("btn-bow").disabled = false;
-    } else {
-        atualizarStatus("Erro no pré-processamento.");
-    }
-};
-
-
-document.getElementById("btn-bow").onclick = async () => {
-    atualizarStatus("Calculando BOW e TF-IDF...");
-    const data = await postData("/bow");
-
-    if (data.status !== "ok") {
-        atualizarStatus("Erro ao calcular BOW/TF-IDF.");
-        return;
-    }
-
-    atualizarStatus("BOW e TF-IDF concluídos.");
-    document.getElementById("btn-topicos").disabled = false;
-
-    plotarGraficos(data.top_freq, data.top_tfidf);
-};
-
-
-document.getElementById("btn-topicos").onclick = async () => {
-    atualizarStatus("Gerando tópicos...");
-    const data = await postData("/topicos");
-
-    if (data.status !== "ok") {
-        atualizarStatus("Erro ao gerar tópicos.");
-        return;
-    }
-
-    atualizarStatus("Tópicos gerados.");
-
-    formatarTopicos(data.topicos);
-};
-
-function formatarTopicos(topicos) {
-    const container = document.getElementById("insights-text");
-    container.innerHTML = "";
-
-    topicos.forEach((topico, index) => {
-        const topicoDiv = document.createElement("div");
-        topicoDiv.className = "topico-card";
+        atualizarStatus("Tópicos Transformers gerados com sucesso!");
+        document.getElementById("summary-content").innerText =
+            "Pipeline Transformers concluído: coleta, pré-processamento e modelagem.";
         
-        const titulo = document.createElement("h3");
-        titulo.textContent = `Tópico ${index + 1}`;
-        topicoDiv.appendChild(titulo);
+        exibirTopicos(data.topicos);
+        plotarGraficos(data.chart_data);
+    } else {
+        atualizarStatus("Erro ao processar com Transformers: " + data.mensagem);
+    }
+};
 
-        const lista = document.createElement("ol");
-        topico.forEach(([palavra, peso]) => {
-            const item = document.createElement("li");
-            item.innerHTML = `<strong>${palavra}</strong>: ${peso.toFixed(2)}`;
-            lista.appendChild(item);
+function exibirTopicos(topicos) {
+    let texto = "";
+    topicos.forEach((topico, i) => {
+        texto += `Tópico ${i + 1}:\n`;
+        topico.forEach(([palavra, score]) => {
+            texto += `  - ${palavra}: ${score.toFixed(4)}\n`;
         });
-
-        topicoDiv.appendChild(lista);
-        container.appendChild(topicoDiv);
+        texto += "\n";
     });
+    document.getElementById("insights-text").innerText = texto;
 }
 
-function plotarGraficos(freq, tfidf) {
+function plotarGraficos(chartData) {
+    // Limpa gráficos anteriores
+    if (pieChart) pieChart.destroy();
+    barCharts.forEach(chart => chart.destroy());
+    barCharts = [];
 
-    const freqLabels = freq.map(x => x[0]);
-    const freqValues = freq.map(x => x[1]);
+    // Gráfico de pizza - distribuição de tópicos
+    const pieCtx = document.getElementById("chartPie");
+    if (pieCtx && chartData.pie_chart) {
+        pieChart = new Chart(pieCtx, {
+            type: "pie",
+            data: {
+                labels: chartData.pie_chart.labels,
+                datasets: [{
+                    data: chartData.pie_chart.data,
+                    backgroundColor: [
+                        '#FF6384',
+                        '#36A2EB',
+                        '#FFCE56',
+                        '#4BC0C0',
+                        '#9966FF'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    title: {
+                        display: true,
+                        text: 'Distribuição de Tópicos'
+                    }
+                }
+            }
+        });
+    }
 
-    const tfidfLabels = tfidf.map(x => x[0]);
-    const tfidfValues = tfidf.map(x => x[1]);
+    // Gráficos de barras - palavras por tópico
+    const barContainer = document.getElementById("barChartsContainer");
+    barContainer.innerHTML = ""; // Limpa container
 
-    if (chartFreq) chartFreq.destroy();
-    if (chartTfidf) chartTfidf.destroy();
-
-    chartFreq = new Chart(document.getElementById("chartFreq"), {
-        type: "bar",
-        data: {
-            labels: freqLabels,
-            datasets: [{
-                label: "Frequência",
-                data: freqValues
-            }]
-        }
-    });
-
-    chartTfidf = new Chart(document.getElementById("chartTfidf"), {
-        type: "bar",
-        data: {
-            labels: tfidfLabels,
-            datasets: [{
-                label: "TF-IDF",
-                data: tfidfValues
-            }]
-        }
+    chartData.bar_charts.forEach((topico, i) => {
+        const div = document.createElement("div");
+        div.className = "chart-card";
+        
+        const h3 = document.createElement("h3");
+        h3.textContent = topico.topic;
+        div.appendChild(h3);
+        
+        const canvas = document.createElement("canvas");
+        canvas.id = `chartBar${i}`;
+        div.appendChild(canvas);
+        
+        barContainer.appendChild(div);
+        
+        const chart = new Chart(canvas, {
+            type: "bar",
+            data: {
+                labels: topico.words,
+                datasets: [{
+                    label: "Score",
+                    data: topico.scores,
+                    backgroundColor: '#36A2EB'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        
+        barCharts.push(chart);
     });
 }

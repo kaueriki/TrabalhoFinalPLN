@@ -12,17 +12,15 @@
 <body>
   <header>
     <h1>Modelagem de Tópicos — G1 (Economia)</h1>
-    <p class="subtitle">Realize as ações nessa sequência</p>
-    <p class="subtitle">1. Coleta → 2. Pré-processamento → 3. Bag-of-Words → 4. Estatísticas</p>
+    <p class="subtitle">Escolha um método de modelagem de tópicos</p>
+    <p class="subtitle">LDA (tradicional) ou Transformers (avançado)</p>
   </header>
 
   <main class="container">
 
     <section class="controls">
-      <button id="btn-coletar" class="btn">Coletar notícias</button>
-      <button id="btn-processar" class="btn" disabled>Processar</button>
-      <button id="btn-bow" class="btn" disabled>Gerar Bag Of Words</button>
-      <button id="btn-topicos" class="btn" disabled>Gerar Tópicos</button>
+      <button id="btn-lda" class="btn">Processar com LDA</button>
+      <button id="btn-transformers" class="btn">Processar com Transformers</button>
 
       <div id="status" class="status">Nenhuma ação iniciada.</div>
     </section>
@@ -30,25 +28,24 @@
     <section class="summary" id="summary">
       <h2>Resumo</h2>
       <div id="summary-content">
-        Execute a coleta para começar.
+        Clique em um dos botões acima para iniciar.
       </div>
     </section>
 
     <section class="charts">
       <div class="chart-card">
-        <h3>Top palavras por frequência</h3>
-        <canvas id="chartFreq"></canvas>
+        <h3>Distribuição de Tópicos</h3>
+        <canvas id="chartPie"></canvas>
       </div>
 
-      <div class="chart-card">
-        <h3>Top palavras por TF-IDF</h3>
-        <canvas id="chartTfidf"></canvas>
+      <div id="barChartsContainer" class="bar-charts-container">
+        <!-- Gráficos de barras serão inseridos aqui -->
       </div>
     </section>
 
     <section class="insights">
-      <h2>Insights</h2>
-      <div id="insights-text">Nenhum insight ainda.</div>
+      <h2>Tópicos Extraídos</h2>
+      <div id="insights-text">Nenhum tópico gerado ainda.</div>
     </section>
 
   </main>
