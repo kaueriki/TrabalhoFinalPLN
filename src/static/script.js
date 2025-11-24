@@ -66,9 +66,32 @@ document.getElementById("btn-topicos").onclick = async () => {
 
     atualizarStatus("Tópicos gerados.");
 
-    document.getElementById("insights-text").innerText =
-        JSON.stringify(data.topicos, null, 2);
+    formatarTopicos(data.topicos);
 };
+
+function formatarTopicos(topicos) {
+    const container = document.getElementById("insights-text");
+    container.innerHTML = "";
+
+    topicos.forEach((topico, index) => {
+        const topicoDiv = document.createElement("div");
+        topicoDiv.className = "topico-card";
+        
+        const titulo = document.createElement("h3");
+        titulo.textContent = `Tópico ${index + 1}`;
+        topicoDiv.appendChild(titulo);
+
+        const lista = document.createElement("ol");
+        topico.forEach(([palavra, peso]) => {
+            const item = document.createElement("li");
+            item.innerHTML = `<strong>${palavra}</strong>: ${peso.toFixed(2)}`;
+            lista.appendChild(item);
+        });
+
+        topicoDiv.appendChild(lista);
+        container.appendChild(topicoDiv);
+    });
+}
 
 function plotarGraficos(freq, tfidf) {
 
