@@ -47,8 +47,14 @@ function exibirTopicos(topicos) {
     topicos.forEach((topico, i) => {
         texto += `📌 Tópico ${i + 1}\n`;
         texto += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+        
+        // Encontra o score máximo para normalização
+        const maxScore = Math.max(...topico.map(([_, score]) => score));
+        
         topico.forEach(([palavra, score]) => {
-            const barLength = Math.round(score * 50);
+            // Normaliza o score em relação ao máximo
+            const normalizedScore = maxScore > 0 ? score / maxScore : 0;
+            const barLength = Math.round(normalizedScore * 50);
             const bar = "█".repeat(barLength) + "░".repeat(50 - barLength);
             texto += `  ${palavra.padEnd(15)} ${bar} ${score.toFixed(4)}\n`;
         });
