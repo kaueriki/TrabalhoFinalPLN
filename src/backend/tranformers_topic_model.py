@@ -19,9 +19,12 @@ def gerar_topicos_transformers(textos_limpos):
 
     # Extrai as palavras mais importantes de cada tópico
     topic_words = {}
+    topicos_lista = []
     for topic_id in topic_info["Topic"].unique():
         if topic_id != -1:   # Ignora tópicos de outliers
-            topic_words[f"Tópico {topic_id}"] = topic_model.get_topic(topic_id)
+            palavras_scores = topic_model.get_topic(topic_id)
+            topic_words[f"Tópico {topic_id}"] = palavras_scores
+            topicos_lista.append(palavras_scores)
 
     # Dados para o gráfico de pizza
     topic_sizes = topic_info[topic_info["Topic"] >= 0]["Count"]
@@ -43,4 +46,4 @@ def gerar_topicos_transformers(textos_limpos):
         ]
     }
 
-    return topic_words, chart_data
+    return topicos_lista, chart_data

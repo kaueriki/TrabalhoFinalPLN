@@ -45,9 +45,12 @@ document.getElementById("btn-transformers").onclick = async () => {
 function exibirTopicos(topicos) {
     let texto = "";
     topicos.forEach((topico, i) => {
-        texto += `Tópico ${i + 1}:\n`;
+        texto += `📌 Tópico ${i + 1}\n`;
+        texto += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
         topico.forEach(([palavra, score]) => {
-            texto += `  - ${palavra}: ${score.toFixed(4)}\n`;
+            const barLength = Math.round(score * 50);
+            const bar = "█".repeat(barLength) + "░".repeat(50 - barLength);
+            texto += `  ${palavra.padEnd(15)} ${bar} ${score.toFixed(4)}\n`;
         });
         texto += "\n";
     });
